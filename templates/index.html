@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notes</title>
+</head>
+<body>
+    <h1>Заметки</h1>
+    <form action="/add" method="post">
+        <label for="title">Название заметки:</label>
+        <input type="text" id="title" name="title" required>
+        <label for="content">Содержание заметки:</label>
+        <textarea id="content" name="content" required></textarea><br>
+        <button type="submit">Добавить заметку</button>
+    </form>
+
+    <h2>Существующие заметки</h2>
+    {{range .}}
+    <div>
+        <h3>{{.Title}}</h3>
+        <p>{{.Content}}</p>
+        <form action="/delete" method="post" style="display: inline;">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <button type="submit">Удалить</button>
+        </form>
+    </div>
+    {{else}}
+    <p>Нет существующих заметок</p>
+    {{end}}
+</body>
+</html>
