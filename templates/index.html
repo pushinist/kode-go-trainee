@@ -3,6 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <title>Notes</title>
+    <script>
+        async function checkSpelling() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            await checkFieldSpelling(title, 'Название', 'title', resultDiv);
+            await checkFieldSpelling(content, 'Содержание', 'content', resultDiv);
+
+        }
+
+        async function checkFieldSpelling(content, fieldName, fieldId, resultDiv) {
+            const response = await fetch(`/check?text=${encodeURIComponent(content)}`);
+            const errors = await response.json();
+
+            if (errors.length === 0) {
+                resultDiv.innerHTML += `<p>${fieldName}: ошибок не найдено</p>`;
+                return;
+            }
+            errors.forEach((error) => {
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = `Ошибка в ${fieldName}: <strong>${error.word}</strong>`;
+
+                const select = document.createElement('select');
+
+                error.s.forEach((suggestion) => {
+                    const option = document.createElement('option');
+                    option.value = suggestion;
+                    option.text = suggestion;
+                    select.appendChild(option);
+                });
+
+                errorDiv.appendChild(select);
+                resultDiv.appendChild(errorDiv);
+            })
+        }
+
+    </script>
 </head>
 <body>
     <h1>Заметки</h1>
@@ -13,6 +53,8 @@
         <textarea id="content" name="content" required></textarea><br>
         <button type="submit">Добавить заметку</button>
     </form>
+    <button onclick="checkSpelling()">Проверить орфографию</button>
+    <div id="result"></div><br>
 
     <h2>Существующие заметки</h2>
     {{range .}}

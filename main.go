@@ -53,10 +53,9 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	initDB()
 	defer db.Close()
-
+	http.HandleFunc("/check", spellHandler)
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/add", addHandler)
 	http.HandleFunc("/delete", deleteHandler)
-
 	http.ListenAndServe(":8080", nil)
 }
