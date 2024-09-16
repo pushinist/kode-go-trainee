@@ -1,8 +1,6 @@
 package main
 
 import (
-	"database/sql"
-	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
@@ -21,7 +19,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 
 		err := db.QueryRow(`SELECT username FROM users WHERE username = ?`, username).Scan(&existingUser)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if existingUser != "" {
 			http.Error(w, "User with such name already exists", http.StatusInternalServerError)
 			return
 		}
