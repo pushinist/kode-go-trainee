@@ -6,6 +6,7 @@ type Note struct {
 	ID      int
 	Title   string
 	Content string
+	UserID  int
 }
 
 func checkErr(err error) {
@@ -14,9 +15,9 @@ func checkErr(err error) {
 	}
 }
 
-func CreateNote(title, content string) {
-	query := `INSERT INTO notes (title, content) VALUES (?, ?)`
-	_, err := db.Exec(query, title, content)
+func CreateNote(title, content string, userIDInt int) {
+	query := `INSERT INTO notes (title, content, user_id) VALUES (?, ?, ?)`
+	_, err := db.Exec(query, title, content, userIDInt)
 	checkErr(err)
 }
 

@@ -1,41 +1,77 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"html/template"
 	"net/http"
 	"strconv"
 )
 
-// add notes ✅
-// read notes ✅
-// validate notes (ya.speller)
-// authentication and authorization
-// special access
-// registration
-// logging
-// docker
+type PageData struct {
+	Username string
+	Notes    []Note
+}
 
-func indexHandler(w http.ResponseWriter, _ *http.Request) {
-	notes, err := GetNotes()
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_token")
+	var username string
+	var userID int
+	if err == nil {
+		username = sessions[cookie.Value]
+		row := db.QueryRow("SELECT id FROM users WHERE username = ?", username)
+		err = row.Scan(&userID)
+	}
+
+	rows, err := db.Query("SELECT id, title, content FROM notes WHERE user_id = ?", userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl, err := template.ParseFiles("templates/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	defer rows.Close()
+	var notes []Note
+	for rows.Next() {
+		var note Note
+		if err = rows.Scan(&note.ID, &note.Title, &note.Content); err != nil {
+			http.Error(w, "Unable to scan note", http.StatusInternalServerError)
+			return
+		}
+		note.UserID = userID
+		notes = append(notes, note)
 	}
-	tmpl.Execute(w, notes)
+	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+	err = tmpl.Execute(w, PageData{
+		Username: username,
+		Notes:    notes,
+	})
+	if err != nil {
+		http.Error(w, "Unable to render page", http.StatusInternalServerError)
+	}
 }
 
 func addHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost {
 		title := r.FormValue("title")
 		content := r.FormValue("content")
-
-		CreateNote(title, content)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		cookie, err := r.Cookie("session_token")
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		username := sessions[cookie.Value]
+		row := db.QueryRow("SELECT id FROM users WHERE username = ?", username)
+		var userID int
+		err = row.Scan(&userID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "user not found", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, "error scanning row", http.StatusInternalServerError)
+			return
+		}
+		CreateNote(title, content, userID)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 	}
 }
 
@@ -57,5 +93,8 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/add", addHandler)
 	http.HandleFunc("/delete", deleteHandler)
+	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/signup", registerHandler)
+	http.HandleFunc("/logout", logoutHandler)
 	http.ListenAndServe(":8080", nil)
 }
