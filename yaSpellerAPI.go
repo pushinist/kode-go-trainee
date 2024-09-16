@@ -21,14 +21,12 @@ func CheckSpelling(text string) ([]SpellError, error) {
 	data := url.Values{}
 	data.Set("text", text)
 
-	// Отправляем GET-запрос к API
 	resp, err := http.Get(baseURL + "?" + data.Encode())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Декодируем ответ в структуру
 	var spellErrors []SpellError
 	if err := json.NewDecoder(resp.Body).Decode(&spellErrors); err != nil {
 		return nil, err
@@ -44,14 +42,12 @@ func spellHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем орфографию
 	spellErrors, err := CheckSpelling(text)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем ошибки в формате JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(spellErrors)
 }
